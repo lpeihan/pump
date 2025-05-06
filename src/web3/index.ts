@@ -25,9 +25,6 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import BN from 'bn.js';
-import dayjs from 'dayjs';
-
-console.log(dayjs(1746542312 * 1000).format('YYYY-MM-DD HH:mm:ss'));
 
 import { SellToken } from './idl/sell_token';
 

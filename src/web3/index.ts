@@ -25,6 +25,9 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import BN from 'bn.js';
+import dayjs from 'dayjs';
+
+console.log(dayjs(1746542312 * 1000).format('YYYY-MM-DD HH:mm:ss'));
 
 import { SellToken } from './idl/sell_token';
 
@@ -35,7 +38,7 @@ export const config = {
 
   programId: '8u2V6SHBURgDV23rvWFKBvPvhthYKP3eHfYgGJzQHLps',
   usdtMint: '7p152r89TzRipiz3KZ4BYABDawJrcH5J5uCJs8H9iyn4',
-  btcMint: '5maaA8eSJoVxhFqSKn5a3MFMkogq2P4Wo1EVUGwRgVXp',
+  btcMint: '9H6VhHiCJ4C7aXGASTyd7vjYy9b7eMTjzJH83y2YCodF',
 };
 
 export const PROGRAM_ID = new PublicKey(config.programId);
@@ -328,7 +331,7 @@ export const fetchSaleAccount = async () => {
 
 export const fetchUserPurchase = async () => {
   const [userPurchaseInstance] = PublicKey.findProgramAddressSync(
-    [Buffer.from('token_purchase'), authority.toBuffer()],
+    [Buffer.from('token_purchase'), authority.toBuffer(), BTC_MINT.toBuffer()],
     PROGRAM_ID,
   );
 
@@ -368,7 +371,7 @@ export const buyTokens = async () => {
       [Buffer.from('token_sale'), BTC_MINT.toBuffer()],
       PROGRAM_ID,
     );
-    const amount = numberUtils.movePointRight(200, 9);
+    const amount = numberUtils.movePointRight(2000, 9);
     const [saleTokenAccount] = PublicKey.findProgramAddressSync(
       [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDT_MINT.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -466,7 +469,6 @@ export const withdrawTokens = async () => {
         saleTokenAccount,
         refundTokenAccount,
         contractTokenAccount,
-        userPurchase: '',
       })
       .instruction();
 

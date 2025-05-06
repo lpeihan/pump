@@ -67,6 +67,10 @@ export type SellToken = {
                 kind: 'account';
                 path: 'buyer';
               },
+              {
+                kind: 'account';
+                path: 'tokenMint';
+              },
             ];
           };
         },
@@ -244,6 +248,111 @@ export type SellToken = {
       ];
     },
     {
+      name: 'withdrawSaleTokens';
+      discriminator: [35, 95, 97, 226, 80, 75, 131, 53];
+      accounts: [
+        {
+          name: 'sale';
+          docs: [
+            '销售账户',
+            '验证：',
+            '1. 销售必须处于活跃状态',
+            '2. 调用者必须是销售账户的所有者',
+          ];
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 115, 97, 108, 101];
+              },
+              {
+                kind: 'account';
+                path: 'tokenMint';
+              },
+            ];
+          };
+        },
+        {
+          name: 'tokenMint';
+          docs: ['销售代币的Mint账户', '验证：必须与销售账户中记录的代币Mint一致'];
+          writable: true;
+        },
+        {
+          name: 'buyTokenMint';
+          docs: ['购买代币的Mint账户', '验证：必须与销售账户中记录的购买代币Mint一致'];
+          writable: true;
+        },
+        {
+          name: 'owner';
+          docs: ['销售账户所有者', '必须是交易的签名者'];
+          writable: true;
+          signer: true;
+        },
+        {
+          name: 'ownerTokenAccount';
+          docs: [
+            '所有者的代币账户',
+            '验证：',
+            '1. 账户所有者必须是销售账户所有者',
+            '2. 代币类型必须与销售代币一致',
+          ];
+          writable: true;
+        },
+        {
+          name: 'saleTokenAccount';
+          docs: [
+            '销售账户的代币账户',
+            '验证：',
+            '1. 账户所有者必须是销售账户',
+            '2. 代币类型必须与销售代币一致',
+          ];
+          writable: true;
+        },
+        {
+          name: 'ownerBuyTokenAccount';
+          docs: [
+            '所有者的购买代币账户',
+            '验证：',
+            '1. 账户所有者必须是销售账户所有者',
+            '2. 代币类型必须与购买代币一致',
+          ];
+          writable: true;
+        },
+        {
+          name: 'contractTokenAccount';
+          docs: [
+            '合约的购买代币账户',
+            '验证：',
+            '1. 账户所有者必须是销售账户',
+            '2. 代币类型必须与购买代币一致',
+          ];
+          writable: true;
+        },
+        {
+          name: 'userPurchase';
+          docs: ['用户购买记录账户'];
+          writable: true;
+        },
+        {
+          name: 'systemProgram';
+          docs: ['系统程序'];
+          address: '11111111111111111111111111111111';
+        },
+        {
+          name: 'tokenProgram';
+          docs: ['代币程序'];
+          address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+        },
+        {
+          name: 'associatedTokenProgram';
+          docs: ['关联代币程序'];
+          address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+        },
+      ];
+      args: [];
+    },
+    {
       name: 'withdrawTokens';
       discriminator: [2, 4, 225, 61, 19, 182, 106, 170];
       accounts: [
@@ -295,6 +404,22 @@ export type SellToken = {
         {
           name: 'userPurchase';
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 112, 117, 114, 99, 104, 97, 115, 101];
+              },
+              {
+                kind: 'account';
+                path: 'owner';
+              },
+              {
+                kind: 'account';
+                path: 'tokenMint';
+              },
+            ];
+          };
         },
         {
           name: 'systemProgram';
@@ -427,6 +552,11 @@ export type SellToken = {
       code: 6020;
       name: 'userNotPurchased';
       msg: 'User not purchased.';
+    },
+    {
+      code: 6021;
+      name: 'missingRequiredSignature';
+      msg: 'MissingRequiredSignature.';
     },
   ];
   types: [

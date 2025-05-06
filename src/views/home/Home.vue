@@ -162,9 +162,7 @@ onMounted(async () => {
 });
 
 const fetchTokenAccounts = async () => {
-  loading.open();
   state.tokenAccounts = await getTokenAccounts();
-  loading.close();
 };
 
 const handleInitSaleAccount = async () => {
@@ -172,8 +170,8 @@ const handleInitSaleAccount = async () => {
     loading.open();
     const tokenSymbol = config.btcMint;
     const saleAmount = 2000000000 * 0.2 * 10 ** 9;
-    const pricePerToken = 100 * 10 ** 9;
-    const endTime = dayjs().add(30, 'minutes').valueOf();
+    const pricePerToken = 100 * 10 ** 1;
+    const endTime = dayjs().add(10, 'minutes').unix();
 
     await initSaleAccount(tokenSymbol, saleAmount, pricePerToken, endTime);
     showToast('Success');

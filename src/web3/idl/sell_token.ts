@@ -20,6 +20,18 @@ export type SellToken = {
         {
           name: 'sale';
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 115, 97, 108, 101];
+              },
+              {
+                kind: 'account';
+                path: 'tokenMint';
+              },
+            ];
+          };
         },
         {
           name: 'tokenMint';
@@ -238,6 +250,18 @@ export type SellToken = {
         {
           name: 'sale';
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 115, 97, 108, 101];
+              },
+              {
+                kind: 'account';
+                path: 'tokenMint';
+              },
+            ];
+          };
         },
         {
           name: 'tokenMint';

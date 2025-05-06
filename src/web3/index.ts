@@ -169,6 +169,51 @@ export const getTokenAccounts = async () => {
   return result;
 };
 
+export const getTokenMetadata = async (mintAddress) => {
+  try {
+    const mintPubkey = new PublicKey(mintAddress);
+    const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+    const [metadataAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from('metadata'), METADATA_PROGRAM_ID.toBuffer(), mintPubkey.toBuffer()],
+      METADATA_PROGRAM_ID,
+    );
+
+    const metadataAccount = await connection.getAccountInfo(metadataAddress);
+    if (!metadataAccount) {
+      return null;
+    }
+
+    const metadata = Metadata.deserialize(metadataAccount.data);
+
+    const cleanMetadata = {
+      name: metadata[0].data.name.replace(/\0/g, ''),
+      symbol: metadata[0].data.symbol.replace(/\0/g, ''),
+      uri: metadata[0].data.uri.replace(/\0/g, ''),
+      sellerFeeBasisPoints: metadata[0].data.sellerFeeBasisPoints,
+      creators: metadata[0].data.creators,
+      description: '',
+      image: '',
+    };
+    if (cleanMetadata.uri.startsWith('data:application/json;base64,')) {
+      const jsonData = JSON.parse(
+        Buffer.from(
+          cleanMetadata.uri.replace('data:application/json;base64,', ''),
+          'base64',
+        ).toString(),
+      );
+
+      cleanMetadata.description = jsonData.description;
+      cleanMetadata.image = jsonData.image;
+    }
+
+    return cleanMetadata;
+  } catch (error) {
+    console.error('Failed to fetch token metadata:', error);
+    throw error;
+  }
+};
+
 export const createToken = async (
   tokenName,
   tokenSymbol,
@@ -346,7 +391,6 @@ export const buyTokens = async () => {
     const instruction = await program.methods
       .buyToken(toBN(amount))
       .accounts({
-        sale,
         saleTokenAccount,
         tokenMint: BTC_MINT,
         buyer: authority,
@@ -366,24 +410,62 @@ export const buyTokens = async () => {
 
 export const withdrawTokens = async () => {
   try {
+    const ownerTokenAccount = getAssociatedTokenAddressSync(BTC_MINT, authority);
+    const refundTokenAccount = getAssociatedTokenAddressSync(USDT_MINT, authority);
+
     const [sale] = PublicKey.findProgramAddressSync(
       [Buffer.from('token_sale'), BTC_MINT.toBuffer()],
       PROGRAM_ID,
     );
+    const [saleTokenAccount] = PublicKey.findProgramAddressSync(
+      [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), BTC_MINT.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    );
+    const [contractTokenAccount] = PublicKey.findProgramAddressSync(
+      [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDT_MINT.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    );
 
     const transaction = new Transaction();
+
+    try {
+      await getAccount(connection, ownerTokenAccount);
+    } catch (error) {
+      console.log('🚀 ~ ownerTokenAccount ~ error:', error);
+      const instruction = createAssociatedTokenAccountInstruction(
+        authority,
+        ownerTokenAccount,
+        authority,
+        BTC_MINT,
+        TOKEN_PROGRAM_ID,
+      );
+      transaction.add(instruction);
+    }
+
+    try {
+      await getAccount(connection, refundTokenAccount);
+    } catch (error) {
+      console.log('🚀 ~ refundTokenAccount ~ error:', error);
+      const instruction = createAssociatedTokenAccountInstruction(
+        authority,
+        refundTokenAccount,
+        authority,
+        USDT_MINT,
+        TOKEN_PROGRAM_ID,
+      );
+      transaction.add(instruction);
+    }
 
     const instruction = await program.methods
       .withdrawTokens()
       .accounts({
-        sale,
         tokenMint: BTC_MINT,
-        buyTokenMint: '',
+        buyTokenMint: USDT_MINT,
         owner: authority,
-        ownerTokenAccount: '',
-        saleTokenAccount: '',
-        refundTokenAccount: '',
-        contractTokenAccount: '',
+        ownerTokenAccount,
+        saleTokenAccount,
+        refundTokenAccount,
+        contractTokenAccount,
         userPurchase: '',
       })
       .instruction();
@@ -393,51 +475,6 @@ export const withdrawTokens = async () => {
     await sendTransaction(transaction);
   } catch (error) {
     console.log('🚀 ~ withdrawTokens ~ error:', error);
-    throw error;
-  }
-};
-
-export const getTokenMetadata = async (mintAddress) => {
-  try {
-    const mintPubkey = new PublicKey(mintAddress);
-    const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
-
-    const [metadataAddress] = PublicKey.findProgramAddressSync(
-      [Buffer.from('metadata'), METADATA_PROGRAM_ID.toBuffer(), mintPubkey.toBuffer()],
-      METADATA_PROGRAM_ID,
-    );
-
-    const metadataAccount = await connection.getAccountInfo(metadataAddress);
-    if (!metadataAccount) {
-      return null;
-    }
-
-    const metadata = Metadata.deserialize(metadataAccount.data);
-
-    const cleanMetadata = {
-      name: metadata[0].data.name.replace(/\0/g, ''),
-      symbol: metadata[0].data.symbol.replace(/\0/g, ''),
-      uri: metadata[0].data.uri.replace(/\0/g, ''),
-      sellerFeeBasisPoints: metadata[0].data.sellerFeeBasisPoints,
-      creators: metadata[0].data.creators,
-      description: '',
-      image: '',
-    };
-    if (cleanMetadata.uri.startsWith('data:application/json;base64,')) {
-      const jsonData = JSON.parse(
-        Buffer.from(
-          cleanMetadata.uri.replace('data:application/json;base64,', ''),
-          'base64',
-        ).toString(),
-      );
-
-      cleanMetadata.description = jsonData.description;
-      cleanMetadata.image = jsonData.image;
-    }
-
-    return cleanMetadata;
-  } catch (error) {
-    console.error('Failed to fetch token metadata:', error);
     throw error;
   }
 };

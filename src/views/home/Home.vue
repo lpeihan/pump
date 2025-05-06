@@ -115,6 +115,9 @@
       initSaleAccount
     </van-button>
     <van-button type="primary" block color="#4f46e5" @click="buyTokens">buyTokens</van-button>
+    <van-button type="primary" block color="#4f46e5" @click="withdrawTokens">
+      withdrawTokens
+    </van-button>
   </div>
 </template>
 
@@ -135,6 +138,7 @@ import {
   fetchUserPurchase,
   getTokenAccounts,
   initSaleAccount,
+  withdrawTokens,
 } from '@/web3';
 
 const store = useStore();
@@ -208,7 +212,7 @@ const handleCreateToken = async () => {
 
     loading.open();
 
-    await createToken(
+    const mint = await createToken(
       state.tokenName,
       state.tokenSymbol,
       state.decimals,
@@ -216,9 +220,13 @@ const handleCreateToken = async () => {
       state.description,
       state.imageUrl,
     );
+    console.log('🚀 ~ handleCreateToken ~ mint:', mint);
+    state.tokenAccounts = await getTokenAccounts();
+    const token = state.tokenAccounts.find((item) => item.account.data.parsed.info.mint === mint);
+    console.log('🚀 ~ handleCreateToken ~ token:', token);
+
     loading.close();
     showToast('Success');
-    state.tokenAccounts = await getTokenAccounts();
   } catch (error) {
     console.log('🚀 ~ handleCreateToken ~ error:', error);
     loading.close();

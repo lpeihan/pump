@@ -77,6 +77,47 @@
             placeholder="Describe your token's purpose and vision..."
           />
         </div>
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Token Price
+          </div>
+          <van-field
+            v-model="state.pricePerToken"
+            clearable
+            type="number"
+            :border="false"
+            placeholder="Token Price"
+          />
+        </div>
+
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Sell Duration (Minutes)
+          </div>
+          <van-field
+            v-model="state.duration"
+            clearable
+            type="digit"
+            :border="false"
+            placeholder="Token Price"
+          />
+        </div>
+
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Sell Amount
+          </div>
+          <van-field
+            v-model="state.saleAmount"
+            clearable
+            type="digit"
+            :border="false"
+            placeholder="Token Price"
+          />
+        </div>
 
         <div class="create-btn">
           <van-button type="primary" block color="#4f46e5" @click="handleCreateToken">
@@ -97,11 +138,16 @@
           <div class="token-mint">Mint</div>
           <div class="token-balance">Balance</div>
         </div>
-        <div v-for="item in state.tokenAccounts" :key="item.address" class="token-accounts-item">
+        <div
+          v-for="item in state.tokenAccounts"
+          :key="item.address"
+          class="token-accounts-item"
+          @click="showTokenPopup({ data: item })"
+        >
           <div class="token-pubkey">
             {{ item.metadata?.name || formatWallet(item.pubkey, 4) }}
           </div>
-          <div class="token-mint" @click="copy(item.account.data.parsed.info.mint)">
+          <div class="token-mint">
             {{ formatWallet(item.account.data.parsed.info.mint, 4) }}
           </div>
           <div class="token-balance">
@@ -111,9 +157,6 @@
       </div>
     </div>
 
-    <van-button type="primary" block color="#4f46e5" @click="handleInitSaleAccount">
-      initSaleAccount
-    </van-button>
     <van-button type="primary" block color="#4f46e5" @click="buyTokens">buyTokens</van-button>
     <van-button type="primary" block color="#4f46e5" @click="withdrawTokens">
       withdrawTokens
@@ -128,18 +171,10 @@ import { onMounted, reactive } from 'vue';
 
 import { loading } from '@/components';
 import { useClipboard } from '@/hooks/useClipboard';
+import { showTokenPopup } from '@/popup';
 import { useStore } from '@/store';
 import { formatWallet } from '@/utils';
-import {
-  buyTokens,
-  config,
-  createToken,
-  fetchSaleAccount,
-  fetchUserPurchase,
-  getTokenAccounts,
-  initSaleAccount,
-  withdrawTokens,
-} from '@/web3';
+import { buyTokens, createToken, getTokenAccounts, initSaleAccount, withdrawTokens } from '@/web3';
 
 const store = useStore();
 const { copy } = useClipboard();
@@ -148,41 +183,30 @@ const state = reactive({
   tokenName: '',
   tokenSymbol: '',
   decimals: 9,
-  totalSupply: 1000000000,
+  totalSupply: 100000000,
   description: '',
   imageUrl: '',
+  pricePerToken: '0.01',
+  duration: '30',
+  saleAmount: 100000000 * 0.2,
   tokenAccounts: [],
 });
 
 onMounted(async () => {
   await store.connectWallet();
   fetchTokenAccounts();
-  fetchSaleAccount();
-  fetchUserPurchase();
 });
 
 const fetchTokenAccounts = async () => {
   state.tokenAccounts = await getTokenAccounts();
 };
 
-const handleInitSaleAccount = async () => {
-  try {
-    loading.open();
-    const tokenSymbol = config.btcMint;
-    const saleAmount = 2000000000 * 0.2 * 10 ** 9;
-    const pricePerToken = 100 * 10 ** 1;
-    const endTime = dayjs().add(10, 'minutes').unix();
-
-    await initSaleAccount(tokenSymbol, saleAmount, pricePerToken, endTime);
-    showToast('Success');
-    loading.close();
-  } catch (error) {
-    loading.close();
-  }
-};
-
 const handleCreateToken = async () => {
   try {
+    if (!store.walletAddress) {
+      await store.connectWallet();
+    }
+
     if (!state.tokenName) {
       showToast('Please enter a token name');
       return;
@@ -208,6 +232,18 @@ const handleCreateToken = async () => {
       return;
     }
 
+    if (!state.pricePerToken) {
+      showToast('Please enter a token price');
+    }
+
+    if (!state.saleAmount) {
+      showToast('Please enter a sell amount');
+    }
+
+    if (!state.duration) {
+      showToast('Please enter a sell duration');
+    }
+
     loading.open();
 
     const mint = await createToken(
@@ -218,10 +254,14 @@ const handleCreateToken = async () => {
       state.description,
       state.imageUrl,
     );
-    console.log('🚀 ~ handleCreateToken ~ mint:', mint);
     state.tokenAccounts = await getTokenAccounts();
     const token = state.tokenAccounts.find((item) => item.account.data.parsed.info.mint === mint);
     console.log('🚀 ~ handleCreateToken ~ token:', token);
+
+    const pricePerToken = Number(state.pricePerToken) * 10 ** 9;
+    const saleAmount = Number(state.saleAmount) * 10 ** 9;
+    const endTime = dayjs().add(Number(state.duration), 'minutes').unix();
+    await initSaleAccount(mint, saleAmount, pricePerToken, endTime);
 
     loading.close();
     showToast('Success');

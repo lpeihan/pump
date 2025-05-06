@@ -361,14 +361,15 @@ export const initSaleAccount = async (tokenSymbol, saleAmount, pricePerToken, en
   }
 };
 
-export const buyTokens = async () => {
+export const buyTokens = async (mint, buyAmount) => {
   try {
+    const mintToken = new PublicKey(mint);
     const transaction = new Transaction();
     const [sale] = PublicKey.findProgramAddressSync(
-      [Buffer.from('token_sale'), BTC_MINT.toBuffer()],
+      [Buffer.from('token_sale'), mintToken.toBuffer()],
       PROGRAM_ID,
     );
-    const amount = numberUtils.movePointRight(2000, 9);
+    const amount = numberUtils.movePointRight(buyAmount, 9);
     const [saleTokenAccount] = PublicKey.findProgramAddressSync(
       [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDT_MINT.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -392,7 +393,7 @@ export const buyTokens = async () => {
       .buyToken(toBN(amount))
       .accounts({
         saleTokenAccount,
-        tokenMint: BTC_MINT,
+        tokenMint: mintToken,
         buyer: authority,
         buyerTokenAccount: getAssociatedTokenAddressSync(USDT_MINT, authority),
         buyTokenMint: USDT_MINT,
@@ -408,17 +409,18 @@ export const buyTokens = async () => {
   }
 };
 
-export const withdrawTokens = async () => {
+export const withdrawTokens = async (mint) => {
   try {
-    const ownerTokenAccount = getAssociatedTokenAddressSync(BTC_MINT, authority);
+    const tokenMint = new PublicKey(mint);
+    const ownerTokenAccount = getAssociatedTokenAddressSync(tokenMint, authority);
     const refundTokenAccount = getAssociatedTokenAddressSync(USDT_MINT, authority);
 
     const [sale] = PublicKey.findProgramAddressSync(
-      [Buffer.from('token_sale'), BTC_MINT.toBuffer()],
+      [Buffer.from('token_sale'), tokenMint.toBuffer()],
       PROGRAM_ID,
     );
     const [saleTokenAccount] = PublicKey.findProgramAddressSync(
-      [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), BTC_MINT.toBuffer()],
+      [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMint.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID,
     );
     const [contractTokenAccount] = PublicKey.findProgramAddressSync(
@@ -436,7 +438,7 @@ export const withdrawTokens = async () => {
         authority,
         ownerTokenAccount,
         authority,
-        BTC_MINT,
+        tokenMint,
         TOKEN_PROGRAM_ID,
       );
       transaction.add(instruction);
@@ -459,7 +461,7 @@ export const withdrawTokens = async () => {
     const instruction = await program.methods
       .withdrawTokens()
       .accounts({
-        tokenMint: BTC_MINT,
+        tokenMint: tokenMint,
         buyTokenMint: USDT_MINT,
         owner: authority,
         ownerTokenAccount,

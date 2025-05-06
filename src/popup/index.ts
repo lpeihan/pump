@@ -1,5 +1,5 @@
 import { showPopup } from './core';
 
-export const showSimplePopup = () => {
-  showPopup(require('./SimplePopup.vue').default);
+export const showTokenPopup = (props) => {
+  showPopup(require('./TokenPopup.vue').default, props);
 };

@@ -38,6 +38,10 @@ const props = defineProps({
     type: Object,
     default: () => {},
   },
+  onSuccess: {
+    type: Function,
+    default: () => {},
+  },
 });
 const state = reactive({
   amount: undefined,
@@ -60,6 +64,7 @@ const handleBuyToken = async () => {
     showToast('Success');
     loading.close();
     close();
+    props.onSuccess();
   } catch (err) {
     err.message && showToast(err.message);
     loading.close();

@@ -34,7 +34,7 @@ export const config = {
   rpcUrl: 'https://api.devnet.solana.com',
 
   programId: '8u2V6SHBURgDV23rvWFKBvPvhthYKP3eHfYgGJzQHLps',
-  usdtMint: '7p152r89TzRipiz3KZ4BYABDawJrcH5J5uCJs8H9iyn4',
+  usdtMint: 'EsZS11jSoHqDuxNtjqrSuHgiCVUcck7UbNwcpgmarNox',
   btcMint: '9H6VhHiCJ4C7aXGASTyd7vjYy9b7eMTjzJH83y2YCodF',
 };
 

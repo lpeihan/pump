@@ -142,7 +142,7 @@
           v-for="item in state.tokenAccounts"
           :key="item.address"
           class="token-accounts-item"
-          @click="showTokenPopup({ data: item })"
+          @click="showTokenPopup({ data: item, onSuccess: fetchTokenAccounts })"
         >
           <div class="token-pubkey">
             {{ item.metadata?.name || formatWallet(item.pubkey, 4) }}
@@ -156,11 +156,6 @@
         </div>
       </div>
     </div>
-
-    <van-button type="primary" block color="#4f46e5" @click="buyTokens">buyTokens</van-button>
-    <van-button type="primary" block color="#4f46e5" @click="withdrawTokens">
-      withdrawTokens
-    </van-button>
   </div>
 </template>
 
@@ -174,7 +169,7 @@ import { useClipboard } from '@/hooks/useClipboard';
 import { showTokenPopup } from '@/popup';
 import { useStore } from '@/store';
 import { formatWallet } from '@/utils';
-import { buyTokens, createToken, getTokenAccounts, initSaleAccount, withdrawTokens } from '@/web3';
+import { createToken, getTokenAccounts, initSaleAccount } from '@/web3';
 
 const store = useStore();
 const { copy } = useClipboard();

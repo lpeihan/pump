@@ -79,7 +79,9 @@
         </div>
 
         <div class="create-btn">
-          <van-button type="primary" block color="#4f46e5">Create</van-button>
+          <van-button type="primary" block color="#4f46e5" @click="handleCreateToken">
+            Create
+          </van-button>
         </div>
       </form>
     </div>
@@ -87,13 +89,13 @@
     <div class="token-accounts-container">
       <div class="token-accounts-list">
         <div class="token-accounts-item token-accounts-item-header">
-          <div class="token-pubkey">Pubkey</div>
+          <div class="token-pubkey">Name</div>
           <div class="token-mint">Mint</div>
           <div class="token-balance">Balance</div>
         </div>
         <div v-for="item in state.tokenAccounts" :key="item.address" class="token-accounts-item">
           <div class="token-pubkey">
-            {{ formatWallet(item.pubkey, 4) }}
+            {{ item.metadata?.name || formatWallet(item.pubkey, 4) }}
           </div>
           <div class="token-mint">
             {{ formatWallet(item.account.data.parsed.info.mint, 4) }}
@@ -121,13 +123,7 @@ import { loading } from '@/components';
 import { useClipboard } from '@/hooks/useClipboard';
 import { useStore } from '@/store';
 import { formatWallet } from '@/utils';
-import {
-  buyTokens,
-  fetchSaleAccount,
-  fetchUserPurchase,
-  getTokenAccounts,
-  initSaleAccount,
-} from '@/web3';
+import { buyTokens, createToken, getTokenAccounts, initSaleAccount } from '@/web3';
 
 const store = useStore();
 const { copy } = useClipboard();
@@ -138,13 +134,12 @@ const state = reactive({
   decimals: 9,
   totalSupply: 1000000000,
   description: '',
+  imageUrl: '',
   tokenAccounts: [],
 });
 
 onMounted(async () => {
   await store.autoConnectWallet();
-  fetchSaleAccount();
-  fetchUserPurchase();
   state.tokenAccounts = await getTokenAccounts();
 });
 
@@ -160,6 +155,52 @@ const handleInitSaleAccount = async () => {
     showToast('Success');
     loading.close();
   } catch (error) {
+    loading.close();
+  }
+};
+
+const handleCreateToken = async () => {
+  try {
+    if (!state.tokenName) {
+      showToast('Please enter a token name');
+      return;
+    }
+
+    if (!state.tokenSymbol) {
+      showToast('Please enter a token symbol');
+      return;
+    }
+
+    if (!state.decimals) {
+      showToast('Please enter a token decimals');
+      return;
+    }
+
+    if (!state.totalSupply) {
+      showToast('Please enter a token total supply');
+      return;
+    }
+
+    if (!state.description) {
+      showToast('Please enter a token description');
+      return;
+    }
+
+    loading.open();
+
+    await createToken(
+      state.tokenName,
+      state.tokenSymbol,
+      state.decimals,
+      state.totalSupply,
+      state.description,
+      state.imageUrl,
+    );
+    loading.close();
+    showToast('Success');
+    state.tokenAccounts = await getTokenAccounts();
+  } catch (error) {
+    console.log('🚀 ~ handleCreateToken ~ error:', error);
     loading.close();
   }
 };
@@ -215,7 +256,7 @@ const handleInitSaleAccount = async () => {
   }
 
   .create-token-container {
-    padding: 24px;
+    padding: 20px;
     margin: auto;
 
     .van-button {

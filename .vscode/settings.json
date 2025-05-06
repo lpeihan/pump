@@ -19,6 +19,7 @@
     "commitlint",
     "gdtc",
     "keygen",
+    "Keypair",
     "lamports",
     "minireset",
     "nprogress",

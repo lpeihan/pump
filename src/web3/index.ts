@@ -1,8 +1,15 @@
 import * as anchor from '@coral-xyz/anchor';
 import {
+  createCreateMetadataAccountV3Instruction,
+  Metadata,
+} from '@metaplex-foundation/mpl-token-metadata';
+import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
+  createInitializeMintInstruction,
+  createMintToInstruction,
   getAccount,
+  getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -11,8 +18,10 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import {
   ComputeBudgetProgram,
   Connection,
+  Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  SystemProgram,
   Transaction,
 } from '@solana/web3.js';
 import BN from 'bn.js';
@@ -87,7 +96,7 @@ export const connectWallet = async () => {
   }
 };
 
-export const sendTransaction = async (transaction) => {
+export const sendTransaction = async (transaction, signers = []) => {
   try {
     transaction.add(
       ComputeBudgetProgram.setComputeUnitLimit({
@@ -99,7 +108,7 @@ export const sendTransaction = async (transaction) => {
     const { blockhash } = await provider.connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
-    const signature = await provider.sendAndConfirm(transaction);
+    const signature = await provider.sendAndConfirm(transaction, signers);
     console.log('🚀 ~ sendTransaction ~ signature:', signature);
 
     return signature;
@@ -136,6 +145,131 @@ export const getSolBalance = async () => {
 
     throw error;
   }
+};
+
+export const getTokenAccounts = async () => {
+  const [tokenAccounts, token2022Accounts] = await Promise.all([
+    connection.getParsedTokenAccountsByOwner(authority, {
+      programId: TOKEN_PROGRAM_ID,
+    }),
+    connection.getParsedTokenAccountsByOwner(authority, {
+      programId: TOKEN_2022_PROGRAM_ID,
+    }),
+  ]);
+
+  const result = convertBN([...tokenAccounts.value, ...token2022Accounts.value]);
+
+  for (const tokenAccount of result) {
+    const metadata = await getTokenMetadata(tokenAccount.account.data.parsed.info.mint);
+    tokenAccount.metadata = convertBN(metadata);
+  }
+
+  console.log('🚀 ~ getTokenAccounts ~ result:', result);
+
+  return result;
+};
+
+export const createToken = async (
+  tokenName,
+  tokenSymbol,
+  decimals,
+  tokenSupply,
+  description,
+  imageUrl,
+) => {
+  const mintKeypair = Keypair.generate();
+
+  const createMintIx = SystemProgram.createAccount({
+    fromPubkey: authority,
+    newAccountPubkey: mintKeypair.publicKey,
+    space: 82,
+    lamports: await connection.getMinimumBalanceForRentExemption(82),
+    programId: TOKEN_PROGRAM_ID,
+  });
+
+  const initMintIx = await createInitializeMintInstruction(
+    mintKeypair.publicKey,
+    decimals,
+    authority,
+    authority,
+    TOKEN_PROGRAM_ID,
+  );
+
+  const associatedTokenAccount = await getAssociatedTokenAddress(mintKeypair.publicKey, authority);
+
+  const createATAInstruction = createAssociatedTokenAccountInstruction(
+    authority,
+    associatedTokenAccount,
+    authority,
+    mintKeypair.publicKey,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+
+  const mintToIx = createMintToInstruction(
+    mintKeypair.publicKey,
+    associatedTokenAccount,
+    authority,
+    Math.pow(10, decimals) * tokenSupply,
+  );
+
+  const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+  const [metadataAccount] = PublicKey.findProgramAddressSync(
+    [Buffer.from('metadata'), METADATA_PROGRAM_ID.toBuffer(), mintKeypair.publicKey.toBuffer()],
+    METADATA_PROGRAM_ID,
+  );
+
+  const createMetadataInstruction = createCreateMetadataAccountV3Instruction(
+    {
+      metadata: metadataAccount,
+      mint: mintKeypair.publicKey,
+      mintAuthority: authority,
+      payer: authority,
+      updateAuthority: authority,
+    },
+    {
+      createMetadataAccountArgsV3: {
+        data: {
+          name: tokenName,
+          symbol: tokenSymbol,
+          uri: description
+            ? `data:application/json;base64,${Buffer.from(
+                JSON.stringify({
+                  name: tokenName,
+                  symbol: tokenSymbol,
+                  description,
+                  image: imageUrl,
+                }),
+              ).toString('base64')}`
+            : 'https://5qonlmdunmih2jlu2obartr7cngqdcagfysp7rccfkxxarrt3wda.arweave.net/7BzVsHRrEH0ldNOCCM4_E00BiAYuJP_EQiqvcEYz3YY',
+          sellerFeeBasisPoints: 0,
+          creators: [
+            {
+              address: authority,
+              share: 100,
+              verified: true,
+            },
+          ],
+          collection: null,
+          uses: null,
+        },
+        isMutable: true,
+        collectionDetails: null,
+      },
+    },
+  );
+
+  const transaction = new Transaction().add(
+    createMintIx,
+    initMintIx,
+    createATAInstruction,
+    mintToIx,
+    createMetadataInstruction,
+  );
+
+  await sendTransaction(transaction, [mintKeypair]);
+  return mintKeypair.publicKey.toString();
 };
 
 export const fetchSaleAccount = async () => {
@@ -258,19 +392,49 @@ export const withdrawTokens = async () => {
   }
 };
 
-export const getTokenAccounts = async () => {
-  const [tokenAccounts, token2022Accounts] = await Promise.all([
-    connection.getParsedTokenAccountsByOwner(authority, {
-      programId: TOKEN_PROGRAM_ID,
-    }),
-    connection.getParsedTokenAccountsByOwner(authority, {
-      programId: TOKEN_2022_PROGRAM_ID,
-    }),
-  ]);
+export const getTokenMetadata = async (mintAddress) => {
+  try {
+    const mintPubkey = new PublicKey(mintAddress);
+    const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
 
-  const result = convertBN([...tokenAccounts.value, ...token2022Accounts.value]);
+    const [metadataAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from('metadata'), METADATA_PROGRAM_ID.toBuffer(), mintPubkey.toBuffer()],
+      METADATA_PROGRAM_ID,
+    );
 
-  console.log('🚀 ~ getTokenAccounts ~ result:', result);
+    const metadataAccount = await connection.getAccountInfo(metadataAddress);
+    if (!metadataAccount) {
+      return null;
+    }
 
-  return result;
+    const metadata = Metadata.deserialize(metadataAccount.data);
+
+    const cleanMetadata = {
+      name: metadata[0].data.name.replace(/\0/g, ''),
+      symbol: metadata[0].data.symbol.replace(/\0/g, ''),
+      uri: metadata[0].data.uri.replace(/\0/g, ''),
+      sellerFeeBasisPoints: metadata[0].data.sellerFeeBasisPoints,
+      creators: metadata[0].data.creators,
+      description: '',
+      image: '',
+    };
+    if (cleanMetadata.uri.startsWith('data:application/json;base64,')) {
+      const jsonData = JSON.parse(
+        Buffer.from(
+          cleanMetadata.uri.replace('data:application/json;base64,', ''),
+          'base64',
+        ).toString(),
+      );
+
+      cleanMetadata.description = jsonData.description;
+      cleanMetadata.image = jsonData.image;
+    }
+
+    console.log('🚀 ~ getTokenMetadata ~ cleanMetadata:', cleanMetadata);
+
+    return cleanMetadata;
+  } catch (error) {
+    console.error('Failed to fetch token metadata:', error);
+    throw error;
+  }
 };

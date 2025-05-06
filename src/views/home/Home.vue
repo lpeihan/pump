@@ -87,6 +87,10 @@
     </div>
 
     <div class="token-accounts-container">
+      <div class="token-acounts-header">
+        <div>Token Accounts</div>
+        <van-button icon="replay" size="mini" @click="fetchTokenAccounts" />
+      </div>
       <div class="token-accounts-list">
         <div class="token-accounts-item token-accounts-item-header">
           <div class="token-pubkey">Name</div>
@@ -97,7 +101,7 @@
           <div class="token-pubkey">
             {{ item.metadata?.name || formatWallet(item.pubkey, 4) }}
           </div>
-          <div class="token-mint">
+          <div class="token-mint" @click="copy(item.account.data.parsed.info.mint)">
             {{ formatWallet(item.account.data.parsed.info.mint, 4) }}
           </div>
           <div class="token-balance">
@@ -123,7 +127,15 @@ import { loading } from '@/components';
 import { useClipboard } from '@/hooks/useClipboard';
 import { useStore } from '@/store';
 import { formatWallet } from '@/utils';
-import { buyTokens, createToken, getTokenAccounts, initSaleAccount } from '@/web3';
+import {
+  buyTokens,
+  config,
+  createToken,
+  fetchSaleAccount,
+  fetchUserPurchase,
+  getTokenAccounts,
+  initSaleAccount,
+} from '@/web3';
 
 const store = useStore();
 const { copy } = useClipboard();
@@ -139,15 +151,23 @@ const state = reactive({
 });
 
 onMounted(async () => {
-  await store.autoConnectWallet();
-  state.tokenAccounts = await getTokenAccounts();
+  await store.connectWallet();
+  fetchTokenAccounts();
+  fetchSaleAccount();
+  fetchUserPurchase();
 });
+
+const fetchTokenAccounts = async () => {
+  loading.open();
+  state.tokenAccounts = await getTokenAccounts();
+  loading.close();
+};
 
 const handleInitSaleAccount = async () => {
   try {
     loading.open();
-    const tokenSymbol = 'Erkvc3uZDHk7M7w48aZW7EBcAFj4zZZFCNhdqyonA436';
-    const saleAmount = 21000000 * 0.2 * 10 ** 9;
+    const tokenSymbol = config.btcMint;
+    const saleAmount = 2000000000 * 0.2 * 10 ** 9;
     const pricePerToken = 100 * 10 ** 9;
     const endTime = dayjs().add(30, 'minutes').valueOf();
 
@@ -317,6 +337,14 @@ const handleCreateToken = async () => {
   .token-accounts-container {
     padding: 0 24px 24px;
     margin: auto;
+
+    .token-acounts-header {
+      display: flex;
+      margin-bottom: 8px;
+      font-weight: bold;
+      align-items: center;
+      justify-content: space-between;
+    }
 
     .token-accounts-list {
       padding: 4px 12px;

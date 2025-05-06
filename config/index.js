@@ -7,7 +7,7 @@ const mode = process.env.MODE || 'dev';
 module.exports = merge(
   {
     outputDir: 'dist',
-    port: 7080,
+    port: 7085,
   },
   require(`./${mode}.env.js`),
 );

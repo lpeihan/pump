@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/sell_token.json`.
  */
 export type SellToken = {
-  address: '4PkMVY2Z42R3RTyPmaGUD5FYQx3WJv3acYFLZeUv8iBT';
+  address: '8u2V6SHBURgDV23rvWFKBvPvhthYKP3eHfYgGJzQHLps';
   metadata: {
     name: 'sellToken';
     version: '0.1.0';
@@ -244,6 +244,10 @@ export type SellToken = {
           writable: true;
         },
         {
+          name: 'buyTokenMint';
+          writable: true;
+        },
+        {
           name: 'owner';
           writable: true;
           signer: true;
@@ -254,6 +258,18 @@ export type SellToken = {
         },
         {
           name: 'saleTokenAccount';
+          writable: true;
+        },
+        {
+          name: 'refundTokenAccount';
+          writable: true;
+        },
+        {
+          name: 'contractTokenAccount';
+          writable: true;
+        },
+        {
+          name: 'userPurchase';
           writable: true;
         },
         {
@@ -377,6 +393,16 @@ export type SellToken = {
       code: 6018;
       name: 'tokenAccountMismatch';
       msg: 'Token account mismatch.';
+    },
+    {
+      code: 6019;
+      name: 'userAlreadyPurchased';
+      msg: 'User already purchased.';
+    },
+    {
+      code: 6020;
+      name: 'userNotPurchased';
+      msg: 'User not purchased.';
     },
   ];
   types: [

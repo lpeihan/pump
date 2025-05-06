@@ -33,9 +33,9 @@ import numberUtils from '@/utils/numberUtils';
 export const config = {
   rpcUrl: 'https://api.devnet.solana.com',
 
-  programId: '4PkMVY2Z42R3RTyPmaGUD5FYQx3WJv3acYFLZeUv8iBT',
-  usdtMint: 'CXR4u9xWA5U1gu6yHaaX8F8ebonhC7KzScoWkCudPkwk',
-  btcMint: 'Erkvc3uZDHk7M7w48aZW7EBcAFj4zZZFCNhdqyonA436',
+  programId: '8u2V6SHBURgDV23rvWFKBvPvhthYKP3eHfYgGJzQHLps',
+  usdtMint: '7p152r89TzRipiz3KZ4BYABDawJrcH5J5uCJs8H9iyn4',
+  btcMint: '5maaA8eSJoVxhFqSKn5a3MFMkogq2P4Wo1EVUGwRgVXp',
 };
 
 export const PROGRAM_ID = new PublicKey(config.programId);
@@ -75,7 +75,7 @@ export const toBuffer = (value) => {
 };
 
 export const toBN = (value) => {
-  return new BN(value);
+  return new BN(String(value));
 };
 
 export const connectWallet = async () => {
@@ -342,6 +342,7 @@ export const buyTokens = async () => {
       );
       transaction.add(instruction);
     }
+
     const instruction = await program.methods
       .buyToken(toBN(amount))
       .accounts({
@@ -377,9 +378,13 @@ export const withdrawTokens = async () => {
       .accounts({
         sale,
         tokenMint: BTC_MINT,
+        buyTokenMint: '',
         owner: authority,
         ownerTokenAccount: '',
         saleTokenAccount: '',
+        refundTokenAccount: '',
+        contractTokenAccount: '',
+        userPurchase: '',
       })
       .instruction();
 
@@ -429,8 +434,6 @@ export const getTokenMetadata = async (mintAddress) => {
       cleanMetadata.description = jsonData.description;
       cleanMetadata.image = jsonData.image;
     }
-
-    console.log('🚀 ~ getTokenMetadata ~ cleanMetadata:', cleanMetadata);
 
     return cleanMetadata;
   } catch (error) {

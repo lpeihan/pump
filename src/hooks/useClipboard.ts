@@ -4,18 +4,16 @@ import { ref } from 'vue';
 
 import { i18n } from '@/locales';
 
-export const useClipboard = (value = '', successText = i18n.global.t('copied')) => {
-  const source = ref(value);
-  const { text, copied, copy } = useOriginalClipboard({ source });
+export const useClipboard = () => {
+  const copyToClipboard = async (value = '', successText = i18n.global.t('copied')) => {
+    const source = ref(value);
+    const { copy } = useOriginalClipboard({ source });
 
-  const copyToClipboard = async () => {
     await copy(source.value);
     showToast(successText);
   };
 
   return {
-    text,
-    copied,
     copy: copyToClipboard,
   };
 };

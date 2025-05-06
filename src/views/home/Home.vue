@@ -1,0 +1,311 @@
+<template>
+  <div class="home-page">
+    <div class="home-header">
+      <div class="logo-wrapper">
+        <img src="@/assets/images/logo.png" />
+        <span>Bun.Fun</span>
+      </div>
+
+      <div class="wallet-wrapper">
+        <div class="sol-balance">
+          <span>{{ store.solBalance }}</span>
+          <img src="@/assets/images/logo.png" />
+        </div>
+
+        <div class="connect-wallet">
+          <van-button
+            v-if="store.formattedWalletAddress"
+            size="small"
+            @click="copy(store.walletAddress)"
+          >
+            {{ store.formattedWalletAddress }}
+          </van-button>
+          <van-button v-else size="small" @click="store.connectWallet">
+            {{ 'Collect Wallet' }}
+          </van-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="create-token-container">
+      <van-button type="primary" block color="#4f46e5">Create Your Own Coin FAST ⚡</van-button>
+      <div class="description">Launch your own coin on Solana in seconds. No coding required.</div>
+
+      <form class="form-wrapper">
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Token Name
+          </div>
+          <van-field v-model="state.tokenName" clearable :maxlength="32" :border="false" />
+          <div class="desc">{{ '(Max 32 characters)' }}</div>
+        </div>
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Token Symbol
+          </div>
+          <van-field v-model="state.tokenSymbol" clearable :maxlength="8" :border="false" />
+          <div class="desc">{{ '(Max 8 characters)' }}</div>
+        </div>
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Decimals
+          </div>
+          <van-field v-model="state.decimals" clearable :border="false" type="digit" />
+        </div>
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Total Supply
+          </div>
+          <van-field v-model="state.totalSupply" clearable :border="false" type="digit" />
+          <div class="desc">{{ '1 billion by default (recommended), 9 decimals' }}</div>
+        </div>
+        <div class="form-item">
+          <div class="name">
+            <span>*</span>
+            Description
+          </div>
+          <van-field
+            v-model="state.description"
+            clearable
+            autosize
+            :border="false"
+            type="textarea"
+            placeholder="Describe your token's purpose and vision..."
+          />
+        </div>
+
+        <div class="create-btn">
+          <van-button type="primary" block color="#4f46e5">Create</van-button>
+        </div>
+      </form>
+    </div>
+
+    <div class="token-accounts-container">
+      <div class="token-accounts-list">
+        <div class="token-accounts-item token-accounts-item-header">
+          <div class="token-pubkey">Pubkey</div>
+          <div class="token-mint">Mint</div>
+          <div class="token-balance">Balance</div>
+        </div>
+        <div v-for="item in state.tokenAccounts" :key="item.address" class="token-accounts-item">
+          <div class="token-pubkey">
+            {{ formatWallet(item.pubkey, 4) }}
+          </div>
+          <div class="token-mint">
+            {{ formatWallet(item.account.data.parsed.info.mint, 4) }}
+          </div>
+          <div class="token-balance">
+            {{ item.account.data.parsed.info.tokenAmount.uiAmount.toLocaleString() }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <van-button type="primary" block color="#4f46e5" @click="handleInitSaleAccount">
+      initSaleAccount
+    </van-button>
+    <van-button type="primary" block color="#4f46e5" @click="buyTokens">buyTokens</van-button>
+  </div>
+</template>
+
+<script setup>
+import dayjs from 'dayjs';
+import { showToast } from 'vant';
+import { onMounted, reactive } from 'vue';
+
+import { loading } from '@/components';
+import { useClipboard } from '@/hooks/useClipboard';
+import { useStore } from '@/store';
+import { formatWallet } from '@/utils';
+import {
+  buyTokens,
+  fetchSaleAccount,
+  fetchUserPurchase,
+  getTokenAccounts,
+  initSaleAccount,
+} from '@/web3';
+
+const store = useStore();
+const { copy } = useClipboard();
+
+const state = reactive({
+  tokenName: '',
+  tokenSymbol: '',
+  decimals: 9,
+  totalSupply: 1000000000,
+  description: '',
+  tokenAccounts: [],
+});
+
+onMounted(async () => {
+  await store.autoConnectWallet();
+  fetchSaleAccount();
+  fetchUserPurchase();
+  state.tokenAccounts = await getTokenAccounts();
+});
+
+const handleInitSaleAccount = async () => {
+  try {
+    loading.open();
+    const tokenSymbol = 'Erkvc3uZDHk7M7w48aZW7EBcAFj4zZZFCNhdqyonA436';
+    const saleAmount = 21000000 * 0.2 * 10 ** 9;
+    const pricePerToken = 100 * 10 ** 9;
+    const endTime = dayjs().add(30, 'minutes').valueOf();
+
+    await initSaleAccount(tokenSymbol, saleAmount, pricePerToken, endTime);
+    showToast('Success');
+    loading.close();
+  } catch (error) {
+    loading.close();
+  }
+};
+</script>
+
+<style lang="less" scoped>
+.home-page {
+  .home-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f8fafc1a;
+
+    .logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+
+      img {
+        width: 18px;
+      }
+
+      span {
+        font-weight: bold;
+      }
+    }
+
+    .wallet-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .sol-balance {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: bold;
+
+        img {
+          width: 18px;
+        }
+      }
+
+      .connect-wallet {
+        .van-button {
+          font-weight: bold;
+          background-color: #86efac;
+          border-color: #86efac;
+        }
+      }
+    }
+  }
+
+  .create-token-container {
+    padding: 24px;
+    margin: auto;
+
+    .van-button {
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .description {
+      padding: 12px;
+      font-size: 12px;
+      color: #a3a3a3;
+      text-align: center;
+    }
+
+    .form-wrapper {
+      padding: 20px;
+      background: #1e2423;
+      border: 1px solid #404040;
+      border-radius: 4px;
+
+      .form-item {
+        margin-bottom: 16px;
+
+        .name {
+          display: flex;
+          margin-bottom: 8px;
+          font-size: 13px;
+
+          span {
+            margin-right: 2px;
+            color: var(--red);
+          }
+        }
+
+        :deep(.van-cell) {
+          padding: 6px 12px;
+          background: var(--black);
+          border-radius: 4px;
+
+          .van-field__control {
+            color: var(--white);
+          }
+        }
+
+        .desc {
+          margin-top: 8px;
+          font-size: 12px;
+          color: #a3a3a3;
+        }
+      }
+
+      .create-btn {
+        margin-top: 24px;
+      }
+    }
+  }
+
+  .token-accounts-container {
+    padding: 0 24px 24px;
+    margin: auto;
+
+    .token-accounts-list {
+      padding: 4px 12px;
+      background: #1e2423;
+      border: 1px solid #404040;
+      border-radius: 4px;
+
+      .token-accounts-item-header {
+        font-weight: bold;
+      }
+
+      .token-accounts-item {
+        display: flex;
+        padding: 8px 0;
+        font-size: 12px;
+        align-items: center;
+
+        .token-pubkey {
+          flex: 1;
+        }
+
+        .token-mint {
+          flex: 1;
+        }
+
+        .token-balance {
+          flex: 1;
+        }
+      }
+    }
+  }
+}
+</style>

@@ -1,4 +1,5 @@
 import * as anchor from '@coral-xyz/anchor';
+import { ASSOCIATED_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token';
 import {
   createCreateMetadataAccountV3Instruction,
   Metadata,
@@ -25,7 +26,9 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import BN from 'bn.js';
+import dayjs from 'dayjs';
 
+import { getPoolAddress, getPoolLpMintAddress } from './cpmmPda';
 import { SellToken } from './idl/sell_token';
 
 import numberUtils from '@/utils/numberUtils';
@@ -363,16 +366,30 @@ export const initSaleAccount = async (tokenSymbol, saleAmount, pricePerToken, en
 
 export const buyTokens = async (mint, buyAmount) => {
   try {
-    const mintToken = new PublicKey(mint);
+    const tokenMint = new PublicKey(mint);
     const transaction = new Transaction();
     const [sale] = PublicKey.findProgramAddressSync(
-      [Buffer.from('token_sale'), mintToken.toBuffer()],
+      [Buffer.from('token_sale'), tokenMint.toBuffer()],
       PROGRAM_ID,
     );
     const amount = numberUtils.movePointRight(buyAmount, 9);
     const [saleTokenAccount] = PublicKey.findProgramAddressSync(
       [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDT_MINT.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID,
+    );
+    const [saleSellTokenAccount] = PublicKey.findProgramAddressSync(
+      [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMint.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    );
+    const cpSwapProgram = new PublicKey('CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C');
+    const configAddress = new PublicKey('D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2');
+
+    const [poolAddress] = await getPoolAddress(configAddress, tokenMint, USDT_MINT, cpSwapProgram);
+    const [lpMintAddress] = await getPoolLpMintAddress(poolAddress, cpSwapProgram);
+
+    const [creatorLpToken] = PublicKey.findProgramAddressSync(
+      [authority.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), lpMintAddress.toBuffer()],
+      ASSOCIATED_PROGRAM_ID,
     );
 
     try {
@@ -390,13 +407,18 @@ export const buyTokens = async (mint, buyAmount) => {
     }
 
     const instruction = await program.methods
-      .buyToken(toBN(amount))
+      .buyToken(toBN(amount), toBN(dayjs().unix()))
       .accounts({
         saleTokenAccount,
-        tokenMint: mintToken,
+        tokenMint: tokenMint,
         buyer: authority,
         buyerTokenAccount: getAssociatedTokenAddressSync(USDT_MINT, authority),
         buyTokenMint: USDT_MINT,
+        saleSellTokenAccount,
+        creatorLpToken,
+        ammConfig: new PublicKey('D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2'),
+        token0Program: '',
+        token1Program: '',
       })
       .instruction();
 

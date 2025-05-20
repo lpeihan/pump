@@ -55,6 +55,185 @@ export type SellToken = {
           writable: true;
         },
         {
+          name: 'saleSellTokenAccount';
+          writable: true;
+        },
+        {
+          name: 'cpSwapProgram';
+          address: 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C';
+        },
+        {
+          name: 'ammConfig';
+        },
+        {
+          name: 'authority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  110,
+                  100,
+                  95,
+                  108,
+                  112,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  95,
+                  115,
+                  101,
+                  101,
+                  100,
+                ];
+              },
+            ];
+            program: {
+              kind: 'account';
+              path: 'cpSwapProgram';
+            };
+          };
+        },
+        {
+          name: 'poolState';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [112, 111, 111, 108];
+              },
+              {
+                kind: 'account';
+                path: 'ammConfig';
+              },
+              {
+                kind: 'account';
+                path: 'tokenMint';
+              },
+              {
+                kind: 'account';
+                path: 'buyTokenMint';
+              },
+            ];
+            program: {
+              kind: 'account';
+              path: 'cpSwapProgram';
+            };
+          };
+        },
+        {
+          name: 'lpMint';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [112, 111, 111, 108, 95, 108, 112, 95, 109, 105, 110, 116];
+              },
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+            ];
+            program: {
+              kind: 'account';
+              path: 'cpSwapProgram';
+            };
+          };
+        },
+        {
+          name: 'creatorLpToken';
+          writable: true;
+        },
+        {
+          name: 'token0Vault';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [112, 111, 111, 108, 95, 118, 97, 117, 108, 116];
+              },
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+              {
+                kind: 'account';
+                path: 'tokenMint';
+              },
+            ];
+            program: {
+              kind: 'account';
+              path: 'cpSwapProgram';
+            };
+          };
+        },
+        {
+          name: 'token1Vault';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [112, 111, 111, 108, 95, 118, 97, 117, 108, 116];
+              },
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+              {
+                kind: 'account';
+                path: 'buyTokenMint';
+              },
+            ];
+            program: {
+              kind: 'account';
+              path: 'cpSwapProgram';
+            };
+          };
+        },
+        {
+          name: 'createPoolFee';
+          writable: true;
+          address: 'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8';
+        },
+        {
+          name: 'observationState';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [111, 98, 115, 101, 114, 118, 97, 116, 105, 111, 110];
+              },
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+            ];
+            program: {
+              kind: 'account';
+              path: 'cpSwapProgram';
+            };
+          };
+        },
+        {
           name: 'userPurchase';
           writable: true;
           pda: {
@@ -75,21 +254,37 @@ export type SellToken = {
           };
         },
         {
-          name: 'systemProgram';
-          address: '11111111111111111111111111111111';
-        },
-        {
           name: 'tokenProgram';
           address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+        },
+        {
+          name: 'token0Program';
+          docs: ['Spl token program or token program 2022'];
+        },
+        {
+          name: 'token1Program';
+          docs: ['Spl token program or token program 2022'];
         },
         {
           name: 'associatedTokenProgram';
           address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
         },
+        {
+          name: 'systemProgram';
+          address: '11111111111111111111111111111111';
+        },
+        {
+          name: 'rent';
+          address: 'SysvarRent111111111111111111111111111111111';
+        },
       ];
       args: [
         {
           name: 'amount';
+          type: 'u64';
+        },
+        {
+          name: 'openTime';
           type: 'u64';
         },
       ];
@@ -330,11 +525,6 @@ export type SellToken = {
           writable: true;
         },
         {
-          name: 'userPurchase';
-          docs: ['用户购买记录账户'];
-          writable: true;
-        },
-        {
           name: 'systemProgram';
           docs: ['系统程序'];
           address: '11111111111111111111111111111111';
@@ -438,6 +628,10 @@ export type SellToken = {
     },
   ];
   accounts: [
+    {
+      name: 'ammConfig';
+      discriminator: [218, 244, 33, 104, 203, 203, 43, 111];
+    },
     {
       name: 'saleAccount';
       discriminator: [213, 18, 87, 228, 218, 230, 207, 182];
@@ -560,6 +754,67 @@ export type SellToken = {
     },
   ];
   types: [
+    {
+      name: 'ammConfig';
+      docs: ['Holds the current owner of the factory'];
+      type: {
+        kind: 'struct';
+        fields: [
+          {
+            name: 'bump';
+            docs: ['Bump to identify PDA'];
+            type: 'u8';
+          },
+          {
+            name: 'disableCreatePool';
+            docs: ['Status to control if new pool can be create'];
+            type: 'bool';
+          },
+          {
+            name: 'index';
+            docs: ['Config index'];
+            type: 'u16';
+          },
+          {
+            name: 'tradeFeeRate';
+            docs: ['The trade fee, denominated in hundredths of a bip (10^-6)'];
+            type: 'u64';
+          },
+          {
+            name: 'protocolFeeRate';
+            docs: ['The protocol fee'];
+            type: 'u64';
+          },
+          {
+            name: 'fundFeeRate';
+            docs: ['The fund fee, denominated in hundredths of a bip (10^-6)'];
+            type: 'u64';
+          },
+          {
+            name: 'createPoolFee';
+            docs: ['Fee for create a new pool'];
+            type: 'u64';
+          },
+          {
+            name: 'protocolOwner';
+            docs: ['Address of the protocol fee owner'];
+            type: 'pubkey';
+          },
+          {
+            name: 'fundOwner';
+            docs: ['Address of the fund fee owner'];
+            type: 'pubkey';
+          },
+          {
+            name: 'padding';
+            docs: ['padding'];
+            type: {
+              array: ['u64', 16];
+            };
+          },
+        ];
+      };
+    },
     {
       name: 'saleAccount';
       type: {

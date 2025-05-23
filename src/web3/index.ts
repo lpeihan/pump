@@ -28,8 +28,9 @@ import {
 import BN from 'bn.js';
 import dayjs from 'dayjs';
 
-import { getPoolAddress, getPoolLpMintAddress } from './cpmmPda';
 import { SellToken } from './idl/sell_token';
+import { getPoolAddress, getPoolLpMintAddress } from './pda';
+import { createTokenMintAndAssociatedTokenAccount } from './util';
 
 import numberUtils from '@/utils/numberUtils';
 
@@ -392,6 +393,17 @@ export const buyTokens = async (mint, buyAmount) => {
       ASSOCIATED_PROGRAM_ID,
     );
 
+    const payer = Keypair.generate();
+    const [{ token0Program }, { token1Program }] = await createTokenMintAndAssociatedTokenAccount(
+      connection,
+      payer,
+      new Keypair(),
+      {
+        transferFeeBasisPoints: 0,
+        MaxFee: 0,
+      },
+    );
+
     try {
       await getAccount(connection, saleTokenAccount);
     } catch (error) {
@@ -410,15 +422,15 @@ export const buyTokens = async (mint, buyAmount) => {
       .buyToken(toBN(amount), toBN(dayjs().unix()))
       .accounts({
         saleTokenAccount,
-        tokenMint: tokenMint,
+        tokenMint,
         buyer: authority,
         buyerTokenAccount: getAssociatedTokenAddressSync(USDT_MINT, authority),
         buyTokenMint: USDT_MINT,
         saleSellTokenAccount,
         creatorLpToken,
         ammConfig: new PublicKey('D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2'),
-        token0Program: '',
-        token1Program: '',
+        token0Program,
+        token1Program,
       })
       .instruction();
 

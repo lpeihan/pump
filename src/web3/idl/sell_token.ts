@@ -34,6 +34,18 @@ export type SellToken = {
           };
         },
         {
+          name: 'pdaAccount';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 115, 97, 108, 101];
+              },
+            ];
+          };
+        },
+        {
           name: 'tokenMint';
           writable: true;
         },
@@ -60,7 +72,7 @@ export type SellToken = {
         },
         {
           name: 'cpSwapProgram';
-          address: 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C';
+          address: 'CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW';
         },
         {
           name: 'ammConfig';
@@ -211,7 +223,7 @@ export type SellToken = {
         {
           name: 'createPoolFee';
           writable: true;
-          address: 'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8';
+          address: 'G11FKBRaAkHAKuLCgLM6K6NUc9rTjPAznRCjZifrTQe2';
         },
         {
           name: 'observationState';
@@ -310,6 +322,18 @@ export type SellToken = {
           };
         },
         {
+          name: 'pdaAccount';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 115, 97, 108, 101];
+              },
+            ];
+          };
+        },
+        {
           name: 'tokenMint';
         },
         {
@@ -331,7 +355,7 @@ export type SellToken = {
             seeds: [
               {
                 kind: 'account';
-                path: 'sale';
+                path: 'pdaAccount';
               },
               {
                 kind: 'const';
@@ -469,6 +493,18 @@ export type SellToken = {
           };
         },
         {
+          name: 'pdaAccount';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 115, 97, 108, 101];
+              },
+            ];
+          };
+        },
+        {
           name: 'tokenMint';
           docs: ['销售代币的Mint账户', '验证：必须与销售账户中记录的代币Mint一致'];
           writable: true;
@@ -558,6 +594,18 @@ export type SellToken = {
               {
                 kind: 'account';
                 path: 'tokenMint';
+              },
+            ];
+          };
+        },
+        {
+          name: 'pdaAccount';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110, 95, 115, 97, 108, 101];
               },
             ];
           };

@@ -30,7 +30,6 @@ import dayjs from 'dayjs';
 
 import { SellToken } from './idl/sell_token';
 import { getPoolAddress, getPoolLpMintAddress } from './pda';
-import { createTokenMintAndAssociatedTokenAccount } from './util';
 
 import numberUtils from '@/utils/numberUtils';
 
@@ -369,39 +368,33 @@ export const buyTokens = async (mint, buyAmount) => {
   try {
     const tokenMint = new PublicKey(mint);
     const transaction = new Transaction();
-    const [sale] = PublicKey.findProgramAddressSync(
-      [Buffer.from('token_sale'), tokenMint.toBuffer()],
-      PROGRAM_ID,
+    // const [sale] = PublicKey.findProgramAddressSync(
+    //   [Buffer.from('token_sale'), tokenMint.toBuffer()],
+    //   PROGRAM_ID,
+    // );
+    const [pda] = PublicKey.findProgramAddressSync([Buffer.from('token_sale')], PROGRAM_ID);
+    console.log('🚀 ~ buyTokens ~ pda:', pda);
+    const [saleSellTokenAccount] = PublicKey.findProgramAddressSync(
+      [pda.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMint.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     );
     const amount = numberUtils.movePointRight(buyAmount, 9);
     const [saleTokenAccount] = PublicKey.findProgramAddressSync(
-      [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDT_MINT.toBuffer()],
+      [pda.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDT_MINT.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID,
     );
-    const [saleSellTokenAccount] = PublicKey.findProgramAddressSync(
-      [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMint.toBuffer()],
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-    );
-    const cpSwapProgram = new PublicKey('CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C');
-    const configAddress = new PublicKey('D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2');
+    // const [saleSellTokenAccount] = PublicKey.findProgramAddressSync(
+    //   [sale.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMint.toBuffer()],
+    //   ASSOCIATED_TOKEN_PROGRAM_ID,
+    // );
+    const cpSwapProgram = new PublicKey('CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW');
+    const configAddress = new PublicKey('9zSzfkYy6awexsHvmggeH36pfVUdDGyCcwmjT3AQPBj6');
 
     const [poolAddress] = await getPoolAddress(configAddress, tokenMint, USDT_MINT, cpSwapProgram);
     const [lpMintAddress] = await getPoolLpMintAddress(poolAddress, cpSwapProgram);
-
     const [creatorLpToken] = PublicKey.findProgramAddressSync(
       [authority.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), lpMintAddress.toBuffer()],
       ASSOCIATED_PROGRAM_ID,
-    );
-
-    const payer = Keypair.generate();
-    const [{ token0Program }, { token1Program }] = await createTokenMintAndAssociatedTokenAccount(
-      connection,
-      payer,
-      new Keypair(),
-      {
-        transferFeeBasisPoints: 0,
-        MaxFee: 0,
-      },
     );
 
     try {
@@ -411,7 +404,7 @@ export const buyTokens = async (mint, buyAmount) => {
       const instruction = createAssociatedTokenAccountInstruction(
         authority,
         saleTokenAccount,
-        sale,
+        pda,
         USDT_MINT,
         TOKEN_PROGRAM_ID,
       );
@@ -419,7 +412,7 @@ export const buyTokens = async (mint, buyAmount) => {
     }
 
     const instruction = await program.methods
-      .buyToken(toBN(amount), toBN(dayjs().unix()))
+      .buyToken(toBN(amount), toBN(dayjs().add(1, 'day').unix()))
       .accounts({
         saleTokenAccount,
         tokenMint,
@@ -428,11 +421,12 @@ export const buyTokens = async (mint, buyAmount) => {
         buyTokenMint: USDT_MINT,
         saleSellTokenAccount,
         creatorLpToken,
-        ammConfig: new PublicKey('D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2'),
-        token0Program,
-        token1Program,
+        ammConfig: configAddress,
+        token0Program: TOKEN_PROGRAM_ID,
+        token1Program: TOKEN_PROGRAM_ID,
       })
       .instruction();
+    console.log('🚀 ~ buyTokens ~ instruction:', instruction);
 
     transaction.add(instruction);
 

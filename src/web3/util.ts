@@ -1,9 +1,7 @@
 import * as anchor from '@coral-xyz/anchor';
-import { web3 } from '@coral-xyz/anchor';
 import {
   createInitializeMintInstruction,
   createInitializeTransferFeeConfigInstruction,
-  createMint,
   ExtensionType,
   getAccount,
   getAssociatedTokenAddressSync,
@@ -23,46 +21,23 @@ import {
   Transaction,
 } from '@solana/web3.js';
 
-import { sendTransaction } from './index';
-
 // create a token mint and a token2022 mint with transferFeeConfig
 export async function createTokenMintAndAssociatedTokenAccount(
   connection: Connection,
   payer: Signer,
   mintAuthority: Signer,
-  transferFeeConfig: { transferFeeBasisPoints: number; MaxFee: number },
+  token0,
+  token1,
 ) {
-  const transaction = new Transaction();
-
-  transaction.add(
-    web3.SystemProgram.transfer({
-      fromPubkey: payer.publicKey,
-      toPubkey: mintAuthority.publicKey,
-      lamports: web3.LAMPORTS_PER_SOL,
-    }),
-  );
-  console.log('~~~~~~~~~');
-  await sendTransaction(transaction, [payer]);
-  console.log('~~~~~~~~~123');
-
   interface Token {
     address: PublicKey;
     program: PublicKey;
   }
 
   let tokenArray: Token[] = [];
-  let token0 = await createMint(connection, mintAuthority, mintAuthority.publicKey, null, 9);
-  tokenArray.push({ address: token0, program: TOKEN_PROGRAM_ID });
-
-  let token1 = await createMintWithTransferFee(
-    connection,
-    payer,
-    mintAuthority,
-    Keypair.generate(),
-    transferFeeConfig,
-  );
 
   tokenArray.push({ address: token1, program: TOKEN_2022_PROGRAM_ID });
+  tokenArray.push({ address: token0, program: TOKEN_PROGRAM_ID });
 
   tokenArray.sort(function (x, y) {
     const buffer1 = x.address.toBuffer();
@@ -154,7 +129,7 @@ export async function createTokenMintAndAssociatedTokenAccount(
   ];
 }
 
-async function createMintWithTransferFee(
+export async function createMintWithTransferFee(
   connection: Connection,
   payer: Signer,
   mintAuthority: Signer,

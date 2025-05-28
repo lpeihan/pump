@@ -44,7 +44,7 @@ const props = defineProps({
   },
 });
 const state = reactive({
-  amount: undefined,
+  amount: 2000000,
 });
 
 const show = ref(false);

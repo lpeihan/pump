@@ -393,7 +393,7 @@ export const buyTokens = async (mint, buyAmount) => {
     const [poolAddress] = await getPoolAddress(configAddress, tokenMint, USDT_MINT, cpSwapProgram);
     const [lpMintAddress] = await getPoolLpMintAddress(poolAddress, cpSwapProgram);
     const [creatorLpToken] = PublicKey.findProgramAddressSync(
-      [authority.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), lpMintAddress.toBuffer()],
+      [pda.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), lpMintAddress.toBuffer()],
       ASSOCIATED_PROGRAM_ID,
     );
 
